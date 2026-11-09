@@ -20,9 +20,10 @@ end)
 
 -- skeet-tools
 -- GameSense / Skeet, legacy CS:GO.
--- Custom controls: LUA > B (model and skybox changers: LUA > A).
+-- Custom controls: LUA > B (model and skybox changers: LUA > A,
+-- arms changer: SKINS > Model Options).
 -- Disable the standalone versions (incl. killsay, model changer, skybox
--- changer, molniya hit effect) before loading this combined file.
+-- changer, arms changer, molniya hit effect) before loading this combined file.
 -- Thirdperson checkbox enables the distance override, not the built-in camera.
 
 ui.new_label("LUA", "B", "----- skeet-tools -----")
@@ -2702,4 +2703,85 @@ end
 local skybox_ok, skybox_error = pcall(setup_skybox)
 if not skybox_ok then
     client.log("[skeet-tools] skybox unavailable: ", tostring(skybox_error))
+end
+
+-- Integrated arms changer (no sleeve, r_skin). Controls: SKINS > Model Options.
+local function setup_arms_changer()
+
+-- Made By Exodouding for skeet.cc/gamesense.pub
+
+local skin_colors = {
+    "White",
+    "Black",
+    "Brown",
+    "Asian",
+    "Mexican",
+    "Tattoo"
+}
+
+local LastSelectedIndex = -1
+
+local no_sleeve = ui.new_checkbox("Skins", "Model Options", "No Sleeve")
+
+local PlayerSkinColor = ui.new_checkbox("Skins", "Model Options", "Player Skin Color")
+local Skins = ui.new_combobox("Skins", "Model Options", "\n", skin_colors)
+ui.set_visible(Skins, false)
+
+ui.set_callback(PlayerSkinColor, function()
+
+	local Result = ui.get(PlayerSkinColor)
+	
+	ui.set_visible(Skins, Result)
+	
+	if not Result then 
+		client.set_cvar("r_skin", 0)
+		LastSelectedIndex = -1
+	end
+	
+end)
+
+local function NoSleeve()
+
+    local sleeve = materialsystem.find_materials("sleeve")
+	
+    for i=#sleeve, 1, -1 do
+	
+        if ui.get(no_sleeve) then
+            sleeve[i]:set_material_var_flag(2, true)
+        else
+            sleeve[i]:set_material_var_flag(2, false)
+        end
+    end
+end
+
+local function SkinColor()
+
+	if not ui.get(PlayerSkinColor) then 
+		return
+	end
+	
+	for i, v in pairs(skin_colors) do
+		
+		local SelectedSkin = ui.get(Skins, skin_colors)
+		
+		if SelectedSkin == skin_colors[i] and i ~= LastSelectedIndex then
+			client.set_cvar("r_skin", i-1)
+			-- print("Name : " .. v .. " | Skin ID : " .. i)
+			LastSelectedIndex = i
+		end
+	end
+end
+
+local function Main()
+	NoSleeve()
+	SkinColor()
+end
+
+client.set_event_callback("paint", Main)
+
+end
+
+local arms_changer_ok, arms_changer_error = pcall(setup_arms_changer)
+if not arms_changer_ok then
+    client.log("[skeet-tools] arms_changer unavailable: ", tostring(arms_changer_error))
 end
